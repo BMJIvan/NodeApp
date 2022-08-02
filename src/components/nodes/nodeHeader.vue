@@ -9,7 +9,6 @@ export default defineComponent({
 })
 </script>
 
-
 <style scoped>
 div {
     background: #494949;

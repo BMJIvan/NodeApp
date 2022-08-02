@@ -53,7 +53,7 @@
         <el-button type="primary" @click="dialogVisibleImport = false, importDataConfirm()">Confirm</el-button>
       </span>
     </template>
-  </el-dialog>
+</el-dialog>
 
 <el-dialog
   v-model="dialogVisibleExport" title="Export" width="50%">
@@ -119,7 +119,6 @@ export default {
             item: 'IFELSE',
             input: 3,
             output: 1
-
         },
          {
             name: 'FOR',
@@ -146,26 +145,18 @@ export default {
 
     function executeNodeCode(){
       consoleData.value = drawflowExtend.value.executeNodeCode(editor.value.export())
-      
-      //console.log(drawflowExtend.value.data)
-      //console.log(drawflowExtend.value.nodes)
     }
 
     function pythonCode(){
-      //crear una funcion de javascript para convertir string/JSON a codigo python
       dialogPythonCode.value = drawflowExtend.value.makePythonCode(editor.value.export());
       dialogVisiblePythonCode.value = true;
     }
 
     function clearEditor(){
       editor.value.import({"drawflow": {"Home": {"data": {}}}});
-      //algoritmo.value.obtenerNodos();
     }
 
-    function importEditor() {
-      //recivir de servidor y guardar en dialogDataImport
-      //let palabra = "{\"drawflow\": {\"Home\": {\"data\": {}}}}";
-      //dialogDataImport.value = JSON.parse(palabra);       
+    function importEditor() {   
       dialogVisibleImport.value = true;
       axios.get('http://localhost:3000/readEditor')
       .then(response => {
@@ -235,7 +226,6 @@ export default {
     
       const nodeSelected = listNodes.find(ele => ele.item == name);
       editor.value.addNode(name, nodeSelected.input,  nodeSelected.output, pos_x, pos_y, name, {}, name, 'vue');
-      
     }
 
    onMounted(() => {
@@ -264,20 +254,7 @@ export default {
     exportEditor, importEditor, listNodes, drag, drop, allowDrop, dialogVisibleExport, dialogVisibleImport, dialogDataExport, dialogDataImport, importDataConfirm, exportDataConfirm, clearEditor, pythonCode, dialogPythonCode, dialogVisiblePythonCode, executeNodeCode, consoleData, requestsData
   }
 
-  },
-
-  data(){
-    return {
-      NodeApp_pro: ""
-    }
-  },
-
-  methods: {
-    mostrarConsola(){
-      console.log("funcion trasferida")
-    }
   }
-
 }
 </script>
 

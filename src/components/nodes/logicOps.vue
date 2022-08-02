@@ -57,7 +57,6 @@ export default defineComponent({
             df.updateNodeDataFromId(nodeId.value, dataNode.value);
         }
         
-        
         onMounted(async () => {
             await nextTick()
             nodeId.value = el.value.parentElement.parentElement.id.slice(5)
@@ -68,7 +67,6 @@ export default defineComponent({
         return {
             el, method, options, updateSelect
         }
-
     }    
     
 })
