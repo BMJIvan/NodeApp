@@ -1,716 +1,629 @@
 export default class drawflowExtend{
     constructor(){
-        this.nodes = [];
         this.data = {};
-        this.pythonCode = "no code";
+        this.nodesId = [];
+        this.nodesIdNames = [];
+        this.nodesNames = [];
+        this.nodesMethod = [];
+        this.nodesVariableType = [];
+        this.nodesValueVar = [];
+        this.nodesInputs = [];
+        this.nodesOutputs = [];
+        this.pythonCode = "new code"
+    }
+
+    reset(){
+        this.data = {};
+        this.nodesId = [];
+        this.nodesIdNames = [];
+        this.nodesNames = [];
+        this.nodesMethod = [];
+        this.nodesVariableType = [];
+        this.nodesValueVar = [];
+        this.nodesInputs = [];
+        this.nodesOutputs = [];
+        this.pythonCode = "new code"
     }
 
     executeNodeCode(objetoJSON){
         var {bool: bool_gn, Msg: Msg_gn} = this.getNodes(objetoJSON);
         if(bool_gn == false){
-            return Msg_gn;
+            return Msg_gn
         }
         var {bool: bool_vn, Msg: Msg_vn} = this.validateNodes();
         if(bool_vn == false){
-            return Msg_vn;
+            return Msg_vn
         }
         var {bool: bool_io, Msg: Msg_io} = this.validateInputsOutputs();
         if(bool_io == false){
-            return Msg_io;
-        }
-
-        var {bool: bool_ct, Msg: Msg_ct } = this.createTree();
-        if(bool_ct == false){
-            return Msg_ct;
+            return Msg_io
         }
 
         var {bool: bool_ee, Msg: Msg_ee} = this.executionErrors();
         if(bool_ee == false){
-            return Msg_ee;
+            return Msg_ee
         }
         var Msg_ec = this.executeProgram();
-        return Msg_ec;
+        return Msg_ec
     }
 
     makePythonCode(objetoJSON){
         var {bool: bool_gn, Msg: Msg_gn} = this.getNodes(objetoJSON);
         if(bool_gn == false){
-            return Msg_gn;
+            return Msg_gn
         }
         var {bool: bool_vn, Msg: Msg_vn} = this.validateNodes();
         if(bool_vn == false){
-            return Msg_vn;
+            return Msg_vn
         }
         var {bool: bool_io, Msg: Msg_io} = this.validateInputsOutputs();
         if(bool_io == false){
-            return Msg_io;
-        }
-
-        var {bool: bool_ct, Msg: Msg_ct } = this.createTree();
-        if(bool_ct == false){
-            return Msg_ct;
+            return Msg_io
         }
 
         var {bool: bool_ee, Msg: Msg_ee} = this.executionErrors();
         if(bool_ee == false){
-            return Msg_ee;
+            return Msg_ee
         }
         
         this.getPythonCode();
-        return this.pythonCode;
+        return this.pythonCode
     }
 
     getNodes(objetoJSON){
-        this.data = objetoJSON.drawflow.Home.data;
-        this.nodes = [];
-        var i = 0;
+        this.data = objetoJSON.drawflow.Home.data
         for (let node in this.data){
-            this.nodes[i] = node;
-            i++;
+            this.nodesId.push(node);
+            this.nodesIdNames.push(this.data[node].id);
+            this.nodesNames.push("");
+            this.nodesMethod.push("");
+            this.nodesVariableType.push("");
+            this.nodesValueVar.push("");
+            this.nodesInputs.push([]);
+            this.nodesOutputs.push([]);
         }
-        if(this.nodes.length <= 0){
-            return {bool: false, Msg: "No nodes"};
+        if(this.nodesId.length <= 0){
+            return {bool: false, Msg: "No nodes"}
         }
-        return {bool: true, Msg: "No problems"};
+        return {bool: true, Msg: "No problems"}
     }
 
     validateNodes(){
-        let method = '';
-        let variable = '';
-        var variableType = "";
-        for (let node in this.nodes){
-            method = '';
-            variable = '';
-            let thisNode = this.data[this.nodes[node]];
-            if (JSON.stringify( thisNode.name ) == '"Numeric"' ){
-                if ( JSON.stringify(thisNode.data).includes("method") ){
-                    method = JSON.stringify(thisNode.data.data.method).replace(/"/g, '');
-                }else{
-                    return {bool: false, Msg: 'Select variable type of Numeric node'};
-                }
-                if(JSON.stringify(thisNode.data).includes("valuevar")){
-                    variable = JSON.stringify(thisNode.data.valuevar).replace(/"/g, '');
-                }else{
-                    return {bool: false, Msg: 'Write a value in Numeric Node'};
-                }
-                
-                variableType = variable.match(/^\d+(\.\d+)/g);
-                if(variableType != null){
-                    if(variableType[0].length != variable.length){
-                        return {bool: false, Msg: 'Variable float in Numeric Node is not correct'};
+        let valueType = "";
+        let valuevar = '';
+        var variableCheck = "";
+        for (let nodeId in this.nodesId){
+            valueType = '';
+            valuevar = '';
+            variableCheck = '';
+            var thisNode = this.data[this.nodesId[nodeId]];
+            this.nodesNames[nodeId] = thisNode.name;
+            switch(thisNode.name){
+                case 'Numeric':
+                    if(Object.prototype.hasOwnProperty.call(thisNode.data, "data")){
+                        if(Object.prototype.hasOwnProperty.call(thisNode.data.data, "method") == true){
+                            //this.nodesMethod[nodeId] = thisNode.data.data.method;
+                            this.nodesVariableType[nodeId] = thisNode.data.data.method;
+                        }
+                    } else {
+                        return {bool: false, Msg: 'Select variable type of Numeric node'}
                     }
-                    if(method == 'int'){
-                        return {bool: false, Msg: 'Variable float in Numeric Node but requires int'};
+
+                    if(Object.prototype.hasOwnProperty.call(thisNode.data,"valuevar")){
+                        this.nodesValueVar[nodeId] = thisNode.data.valuevar;
+                    } else {
+                        return {bool: false, Msg: 'Write a value in Numeric Node'}
                     }
-                    continue;
-                }
-                
-                variableType = variable.match(/^\d+/g);
-                if(variableType != null){
-                    if(variable.includes('.') == true){
-                        return {bool: false, Msg: 'Variable float not complete'};
+                    valuevar = this.nodesValueVar[nodeId];
+                    valueType = this.nodesVariableType[nodeId];
+            
+                    variableCheck = valuevar.match(/^\d+(\.\d+)/g);
+                    if(variableCheck != null){
+                        if(variableCheck[0].length != valuevar.length){
+                            return {bool: false, Msg: 'Variable float in Numeric Node is not correct'};
+                        }
+                        if(valueType == 'int'){
+                            return {bool: false, Msg: 'Variable float in Numeric Node but requires int'};
+                        }
+                        continue;
                     }
-                    if(variableType[0].length != variable.length ){
-                        return {bool: false, Msg: 'Variable int in Numeric Node is not correct'};
+                    
+                    variableCheck = valuevar.match(/^\d+/g);
+                    if(variableCheck != null){
+                        if(valuevar.includes('.') == true){
+                            return {bool: false, Msg: 'Variable float not complete'};
+                        }
+                        if(variableCheck[0].length != valuevar.length ){
+                            return {bool: false, Msg: 'Variable int in Numeric Node is not correct'};
+                        }
+                        if(valueType == 'float'){
+                            return {bool: false, Msg: 'Variable int in Numeric Node but requires float'};
+                        }
+                        continue;
+                    }else{
+                        return {bool: false, Msg: "Variable in Numeric Node is not a number"};
                     }
-                    if(method == 'float'){
-                        return {bool: false, Msg: 'Variable int in Numeric Node but requires float'};
+
+                case 'Logic':
+                    if(Object.prototype.hasOwnProperty.call(thisNode.data,"data") == true){
+                        if(Object.prototype.hasOwnProperty.call(thisNode.data.data,"method") == true){
+                            this.nodesMethod[nodeId] = thisNode.data.data.method;
+                        }
+                    } else {
+                        return {bool: false, Msg: "Select operation in Logic node"};
                     }
-                    continue;
-                }else{
-                    return {bool: false, Msg: "Variable in Numeric Node is not a number"};
-                }
-            }
-            if (JSON.stringify( thisNode.name ) == "\"Math\"" ){
-                if(JSON.stringify(thisNode).includes("method") == false){
-                    return {bool: false, Msg: "Select operation in Math node"};
-                }
-            }
-            if (JSON.stringify( thisNode.name ) == "\"Logic\"" ){
-                if(JSON.stringify(thisNode).includes('method') == false)
-                {
-                    return {bool: false, Msg: "Select operation in Logic node"};
-                }
+                break;
+
+                case 'Math':
+                    if(Object.prototype.hasOwnProperty.call(thisNode.data,"data") == true){
+                        if(Object.prototype.hasOwnProperty.call(thisNode.data.data,"method") == true){
+                            this.nodesMethod[nodeId] = thisNode.data.data.method;
+                        }
+                    } else {
+                        return {bool: false, Msg: "Select operation in Math node"};
+                    }
+                break;
+
+                default: break;
             }
         }
-        return {bool: true, Msg: "Nodes validated"};
+        return {bool: true, Msg: "Nodes validated"}
     }
 
     validateInputsOutputs(){
-        let numberkeys = 0;
-        let inputOutputName = '';
-        let nodeName = '';
-        var inputOutput = ['inputs', 'outputs'];
-        var hasInputOutput = [false, false];
-        var IO = 'inputs';
-        for (let node in this.nodes){
-            let thisNode = this.data[this.nodes[node]];
+        let numberInputsOutputs = 0
+        let inputOutputName = ''
+        let nodeName = ''
+        var inputOutput = ['inputs', 'outputs']
+        var hasInputOutput = [false, false]
+        var IO = 'inputs'
+        for (let nodeId in this.nodesId){
+            let thisNode = this.data[this.nodesId[nodeId]];
             hasInputOutput[0] = (Object.keys(thisNode.inputs).length != 0);
             hasInputOutput[1] = (Object.keys(thisNode.outputs).length != 0);
 
             for (let i = 0; i < 2; i++){
-                IO = inputOutput[i];
+                IO = inputOutput[i]
                 if(hasInputOutput[i]){
-                    let thisNodeKeys = Object.keys(thisNode[IO]);
-                    for (let thisNodeKey in thisNodeKeys){
-                        numberkeys = Object.keys(thisNode[IO][thisNodeKeys[thisNodeKey]].connections).length;
-                        inputOutputName = JSON.stringify(thisNodeKeys[thisNodeKey]);
+                    let inputsOutputs = Object.keys(thisNode[IO])
+                    for (let inputOutput in inputsOutputs){
+                        numberInputsOutputs = Object.keys(thisNode[IO][inputsOutputs[inputOutput]].connections).length;
+                        inputOutputName = JSON.stringify(inputsOutputs[inputOutput]);
                         nodeName = thisNode.name;
-                        if(numberkeys == 0){
-                            if((IO == 'outputs') && (nodeName == 'Numeric')){
+                        if(numberInputsOutputs == 0){
+                            if(IO == 'outputs' && nodeName == 'Numeric'){
+                                return {bool: false, Msg: 'It is missing a connection in ' + inputOutputName + " from the node " +  nodeName};
+                            }
+                            if(IO == 'inputs'){
                                 return {bool: false, Msg: 'It is missing a connection in ' + inputOutputName + " from the node " +  nodeName};
                             }
                         }
-                        if(numberkeys > 1){
+                        if(numberInputsOutputs > 1){
                             if(IO != 'outputs'){
                                 return {bool: false, Msg: 'There are too many connections in ' + inputOutputName + " from the node " +  nodeName};
                             }
                         }
+                        if(IO == 'inputs' && this.nodesNames[nodeId] != 'Numeric'){
+                            inputOutputName = inputOutputName.replaceAll('"', '');
+                            var inputNodeName = thisNode[IO][inputOutputName].connections[0].node;
+                            this.nodesInputs[nodeId].push(inputNodeName)  
+                        }
                     }
                 }
             }
         }
-        return {bool: true, Msg: 'Inputs and Outputs validated'};
-    }
-
-    createTree(){
-        let branchName = "";
-        let branchNodes = [];
-        let thisTree = [];
-        let branchposition = 0;
-
-        thisTree[branchName] = branchNodes;
-        this.tree = [["", []]];
-      
-        var numberNodes = Object.keys(this.data).length;
-        for(let position = 0; position < numberNodes; position++){
-            var node = Object.keys(this.data)[position];
-            if(Object.values(this.data[node].inputs).length > 0){
-                var numberInputs = Object.keys(this.data[node].inputs).length;
-                branchName = '';
-                branchNodes = [];
-                thisTree = [];
-                for(let input = 0; input < numberInputs; input++){
-                    var connectionslength = Object.values(this.data[node].inputs)[input].connections.length;
-                    if (connectionslength != 0){
-                        branchName = JSON.stringify(node).replace(/"/g, '\'');
-                        branchNodes.push(JSON.stringify(Object.values(Object.values(this.data[node].inputs)[input].connections)[0].node).replace(/"/g, ''));
-                    }
-                }
-                if(branchNodes.length > 0){
-                    thisTree[branchName] = branchNodes;
-                    this.tree[branchposition] = thisTree;
-                    branchposition++;
-                }
-            }
-        }
-        if(this.tree[0][0] == "" && this.tree[0][1].length == 0){
-            return {bool: false, Msg: "There are only Numeric Nodes"};
-        }
-        return {bool: true, Msg: "Tree created without problems"};
+        return {bool: true, Msg: 'Inputs and Outputs validated'}
     }
 
     executionErrors(){
-        var treeCheck = [];
-        var treeCheckNames = [];
-        var keyNode = "";
-        var nodeName = "";
-        var nameInput = "";
-        var numberNodes = this.tree.length;
-        var nodeNames = [];
+        var checkNodes = [];
+        var checkTypes = [];
+        let rootId = this.getRoot();
 
-        for (let i = 0; i < numberNodes; i++){
-            keyNode = JSON.stringify(Object.keys(this.tree)[i]).replace(/"/g, '');
-            nodeName = JSON.stringify(Object.keys(this.tree[keyNode])[0]).replace(/"/g, '').replace(/'/g, '');
-            nodeNames[i] = nodeName;
-            treeCheck[i] = false;
-            treeCheckNames[i] = this.getName(nodeName, this.nodes, this.data);
+        var len = this.nodesId.length;
+        for(let i = 0; i < len; i++){
+            checkNodes.push(false);
+            checkTypes.push('');
         }
 
-        function check(checkNodeName, tree){
-            var inputs = [];
-            var positionNode = nodeNames.indexOf(checkNodeName);
-            if( positionNode == -1){   
+        function check(nodeId, thisNodesId, thisNodesNames, thisNodesInputs){
+            if(checkNodes[nodeId] == true){
+                return {bool: true, Msg: checkTypes[nodeId]};
+            }
+            if(thisNodesNames[nodeId] == "Numeric"){
+                checkNodes[nodeId] = true;
+                checkTypes[nodeId] = 'Numeric'
                 return {bool: true, Msg: 'Numeric'};
             }
-            if(treeCheck[positionNode] == true){
-                return {bool: true, Msg: treeCheckNames[positionNode]};
-            }
-            
-            var keyNode = JSON.stringify(Object.keys(tree)[positionNode]).replace(/"/g, '');
-            var numberInputs = Object.values(tree[keyNode])[0].length;
-            
-            for (let j = 0; j < numberInputs; j++){
-                nameInput = Object.values(tree[keyNode])[0][j];
-                let {bool, Msg} = check(nameInput, tree);
+
+            var nodeIdName = "";
+            var newNodeId = 0;
+            var inputsTypes = [];
+            for (let input in thisNodesInputs[nodeId]){
+                nodeIdName = thisNodesInputs[nodeId][input];
+                newNodeId = thisNodesId.indexOf(nodeIdName);
+                let {bool, Msg} = check(newNodeId, thisNodesId, thisNodesNames, thisNodesInputs);
                 if(bool == false){
                     return {bool, Msg};
+                } else {
+                    inputsTypes.push(Msg);
                 }
-                inputs.push(Msg);
             }
-            treeCheck[positionNode] = true;
-            var inputValidation1 = ((inputs[0] == 'FOR') || (inputs[0] == 'Numeric') || (inputs[0] == 'Math'));
-            var inputValidation2 = ((inputs[1] == 'FOR') || (inputs[1] == 'Numeric') || (inputs[1] == 'Math'));
-            
-            switch(treeCheckNames[positionNode]){
+            checkNodes[nodeId] = true;
+
+            switch(thisNodesNames[nodeId]){
                 case 'Logic':
-                    if((inputValidation1 == true) && (inputValidation2 == true) ){
+                    if(inputsTypes[0] != 'Logic' && inputsTypes[1] != 'Logic'){
                         return {bool: true, Msg: 'Logic'};
-                    }
-                    return {bool: false, Msg: "Execution Error: Nodes in inputs of Logic Node must return a Numeric value"};
+                    } 
+                    return {bool: false, Msg: 'Execution Error: not all the inputs have a Numeric outputs'};
                 case 'Math':
-                    if(inputValidation1 != inputValidation2){
-                        return {bool: false, Msg: "Execution Error: inputs are not the same in the Math Node"};
+                    if(inputsTypes[0] != 'Logic' && inputsTypes[1] != 'Logic'){
+                        return {bool: true, Msg: 'Math'};
                     }
-                    return {bool: true, Msg: 'Math'};
+                    return {bool: false, Msg: 'Execution Error: there are inputs not valid'};
                 case 'FOR':
-                    if(inputs[2] != 'Math'){
-                        return {bool: false, Msg: "Execution Error: For Node only accepts a Math node"};
+                    if(inputsTypes[0] != 'Logic' && inputsTypes[1] != 'Logic' && inputsTypes[2] == 'Math'){
+                        return {bool: true, Msg: "Numeric"};
                     }
-                    return {bool: true, Msg: 'For'};
+                    if(inputsTypes[0] == 'Logic'){
+                        return {bool: false, Msg: "Execution Error: there is Logic node in input_1 of the FOR node"};
+                    }
+                    if(inputsTypes[1] == 'Logic'){
+                        return {bool: false, Msg: "Execution Error: there is Logic node in input_2 of the FOR node"};
+                    }
+                    if(inputsTypes[2] != 'Math'){
+                        return {bool: false, Msg: "Execution Error: a Math node in requiered in input_3 of the FOR node"};
+                    }
+                    break;
                 case 'IFELSE':
-                    if(inputs[0] != 'Logic'){
-                        return {bool: false, Msg: "Execution Error: the IF/ELSE Node requires a Logic Node in 'input_1'"};
+                    if(inputsTypes[0] != 'Logic'){
+                        return {bool: false, Msg: 'Execution Error: a Logic value in required in input_1 of the IF/ELSE node'};
                     }
-                    inputValidation1 = ((inputs[1] == 'FOR') || (inputs[1] == 'Numeric') || (inputs[1] == 'Math'));
-                    inputValidation2 = ((inputs[2] == 'FOR') || (inputs[2] == 'Numeric') || (inputs[2] == 'Math'));
-                    if( (inputValidation1 == true) && (inputValidation2 == true)){
-                        treeCheckNames[positionNode] = 'Numeric';
-                        return {bool: true, Msg: 'Numeric'};
+                    if(inputsTypes[1] != 'Logic' && inputsTypes[2] != 'Logic'){
+                        return {bool: true, Msg:'Numeric'};
                     }
-                    if(inputs[1] != inputs[2]){
-                        return {bool: false, Msg: "error: inputs are not the same in the IFELSE node"};
+                    if(inputsTypes[1] == 'Logic' && inputsTypes[2] == 'Logic'){
+                        return {bool: true, Msg:'Logic'};
                     }
-                    treeCheckNames[positionNode] = 'Logic';
-                    return {bool: true, Msg: 'Logic'};
-            }
-            return {bool: false, Msg: "Node type not found, modify drawflowExtend.js to add a new node"};
-        }
-        for (let i = 0; i < numberNodes; i++){
-            keyNode = JSON.stringify(Object.keys(this.tree)[i]).replace(/"/g, '');
-            nodeName = JSON.stringify(Object.keys(this.tree[keyNode])[0]).replace(/"/g, '').replace(/'/g, '');
-            let{bool, Msg} = check(nodeName, this.tree);
-            if (bool == false){
-                return {bool, Msg};
+                    return {bool: true, Msg: 'Execution Error: the inputs of the IF/ELSE node are not the same'};
+                default: 
+                    return {bool: false, Msg: "Name not recognized"}
             }
         }
-        return {bool: true, Msg: 'No execution errors'};
+
+        let{bool, Msg} = check(rootId, this.nodesId, this.nodesNames, this.nodesInputs);
+        if (bool == false){
+            return {bool, Msg}
+        }
+        return {bool: true, Msg: 'No execution errors'}
     }
 
     executeProgram(){
-        var treeCheck = [];
-        var treeCheckNames = [];
-        var keyNode = "";
-        var nodeName = "";
-        var nameInput = "";
-        var numberNodes = this.tree.length;
-        var nodeNames = [];
-
-        let positionRoot = this.getRoot();
-
-        for (let i = 0; i < numberNodes; i++){
-            keyNode = JSON.stringify(Object.keys(this.tree)[i]).replace(/"/g, '');
-            nodeName = JSON.stringify(Object.keys(this.tree[keyNode])[0]).replace(/"/g, '').replace(/'/g, '');
-            nodeNames[i] = nodeName;
-            treeCheck[i] = false;
-            treeCheckNames[i] = this.getName(nodeName, this.nodes, this.data);
-        }
-
-        let getValue = this.getValue;
-        let getName = this.getName;
-        let mathOperations = this.mathOperations;
         let logicOperators = this.logicOperators;
-        let getMethod = this.getMethod;
+        let mathOperations = this.mathOperations;
 
         function forNode(forinit, forend, number1, number2, method){
-            let forresult = number1;
+            console.log(forinit);
+            console.log(forend);
+            console.log(number1);
+            console.log(number2);
+            console.log(method);
+            var forresult = number1
             for(let i = forinit; i < forend; i++){
-                forresult = mathOperations(number1, number2, method);
-                number1 = forresult;
+                forresult = mathOperations(number1, number2, method)
+                number1 = forresult
             }
-            return forresult;
+            console.log(forresult);
+            console.log(String(forresult));
+            return forresult.toString();
         }
 
-        function check(checkNodeName, tree, data, nodes, execute){
-            if(getName(checkNodeName, nodes, data) == 'Numeric'){
+        var rootId = this.getRoot();
+        
+        function check(nodeId, thisNodesId, thisNodesNames, thisNodesInputs, thisNodesValueVar, thisNodesMethod, execute){
+            if(thisNodesNames[nodeId] == 'Numeric'){
                 if(execute == true){
-                    return getValue(checkNodeName, nodes, data);
+                    return thisNodesValueVar[nodeId];
                 }
-                return "Numeric," + getValue(checkNodeName, nodes, data) + ",";
+                return 'Numeric,'+thisNodesValueVar[nodeId] + ',';
             }
-            
-            var inputNodeNames = [];
-            var positionNode = nodeNames.indexOf(checkNodeName);
-            var keyNode = JSON.stringify(Object.keys(tree)[positionNode]).replace(/"/g, '');            
-            var numberInputs = Object.values(tree[keyNode])[0].length;
 
-            for (let j = 0; j < numberInputs; j++){
-                nameInput = Object.values(tree[keyNode])[0][j];
-                inputNodeNames.push(nameInput);
+            var nodeIdName = "";
+            var newNodeId = 0;
+            var inputsId = [];
+            for (let input in thisNodesInputs[nodeId]){
+                nodeIdName = thisNodesInputs[nodeId][input];
+                newNodeId = thisNodesId.indexOf(nodeIdName);
+                inputsId.push(newNodeId);
             }
+
             var number1 = "";
             var number2 = "";
             var method = "";
             var result = "";
             var number1Numeric = 0;
             var number2Numeric = 0;
-            var startStr = 0;
-            var endStr = 0;
-            var typeNodeEnd = 0;
-            var typeNode = '';
-            switch(treeCheckNames[positionNode]){
+
+            switch(thisNodesNames[nodeId]){
                 case 'Logic':
-                    number1 = check(inputNodeNames[0], tree, data, nodes, execute);
-                    number2 = check(inputNodeNames[1], tree, data, nodes, execute);
-                    method = getMethod(checkNodeName, nodes, data);
+                    number1 = check(inputsId[0], thisNodesId, thisNodesNames, thisNodesInputs, thisNodesValueVar, thisNodesMethod, execute);
+                    number2 = check(inputsId[1], thisNodesId, thisNodesNames, thisNodesInputs, thisNodesValueVar, thisNodesMethod, execute);
+                    method = thisNodesMethod[nodeId];
                     if(execute == true){
-                        result = logicOperators( parseFloat(number1), parseFloat(number2), method);
+                        result = logicOperators(parseFloat(number1), parseFloat(number2), method);
                         return result.toString();
                     }
-                    return 'Logic,' + number1 + ',' + number2 + ',' + method + ',';
+                    return 'Logic,' + number1 + number2 + method + ',';
                 case 'Math':
-                    number1 = check(inputNodeNames[0], tree, data, nodes, execute);
-                    number2 = check(inputNodeNames[1], tree, data, nodes, execute);
-                    method = getMethod(checkNodeName, nodes, data);
+                    number1 = check(inputsId[0], thisNodesId, thisNodesNames, thisNodesInputs, thisNodesValueVar, thisNodesMethod, execute);
+                    number2 = check(inputsId[1], thisNodesId, thisNodesNames, thisNodesInputs, thisNodesValueVar, thisNodesMethod, execute);
+                    method = thisNodesMethod[nodeId];
                     if(execute == true){
-                        result = mathOperations( parseFloat(number1), parseFloat(number2), method);
+                        result = mathOperations(parseFloat(number1), parseFloat(number2), method);
                         return result.toString();
                     }
                     return 'Math,' + number1 + number2 + method + ',';
                 case 'FOR':
-                    var init = check(inputNodeNames[0], tree, data, nodes, true);
-                    var end = check(inputNodeNames[1], tree, data, nodes, true);
-                    var functionMath = check(inputNodeNames[2], tree, data, nodes, false);
-                    typeNodeEnd = functionMath.indexOf(",");
-                    typeNode = functionMath.substring(0, typeNodeEnd);
-                        
-                    startStr = 0;
-                    endStr = 0;
-
-                    var parameters = functionMath.split(",");
+                    var init = check(inputsId[0], thisNodesId, thisNodesNames, thisNodesInputs, thisNodesValueVar, thisNodesMethod, true);
+                    var end = check(inputsId[1], thisNodesId, thisNodesNames, thisNodesInputs, thisNodesValueVar, thisNodesMethod, true);
+                    var functionMath = check(inputsId[2], thisNodesId, thisNodesNames, thisNodesInputs, thisNodesValueVar, thisNodesMethod, false);
+                    var parameters = functionMath.split(',');
+                    //console.log(parameters);
                     number1 = parameters[2];
                     number2 = parameters[4];
                     method = parameters[5];
                     number1Numeric = parseFloat(number1);
                     number2Numeric = parseFloat(number2);
                     if(execute == true){
-                        return forNode(Math.round(parseFloat(init)), Math.round(parseFloat(end)), number1Numeric, number2Numeric, method).toString();
+                        return forNode(Math.round(parseFloat(init)), Math.round(parseFloat(end)), number1Numeric, number2Numeric, method);
                     }
-                    return 'FOR,'+init+','+end+','+number1+','+number2+','+method+',';
+                    return 'FOR,' + init + ',' + end + ',' + number1 + ',' + number2 + ',' + method + ',';
                 case 'IFELSE':
-                    var condition = check(inputNodeNames[0], tree, data, nodes, true);
-                    var function1 = check(inputNodeNames[1], tree, data, nodes, false);
-                    var function2 = check(inputNodeNames[2], tree, data, nodes, false);
+                    var condition = check(inputsId[0], thisNodesId, thisNodesNames, thisNodesInputs, thisNodesValueVar, thisNodesMethod, true);
+                    var function1 = check(inputsId[1], thisNodesId, thisNodesNames, thisNodesInputs, thisNodesValueVar, thisNodesMethod, false);
+                    var function2 = check(inputsId[2], thisNodesId, thisNodesNames, thisNodesInputs, thisNodesValueVar, thisNodesMethod, false);
                     var finalFunction = "";
-                    
-                    if(condition == "true"){
-                        finalFunction = function1;
-                    }else{
-                        finalFunction = function2;
-                    }
 
+                    finalFunction = condition == "true" ? function1 : function2;
                     if(execute == false){
                         return finalFunction;
                     }
 
-                    typeNodeEnd = finalFunction.indexOf(",");
-                    typeNode = finalFunction.substring(0, typeNodeEnd);
-                    startStr = 0;
-                    endStr = 0;
-                    if(typeNode == "Numeric"){
-                        startStr = finalFunction.indexOf(",");
-                        endStr = finalFunction.indexOf(",",++startStr);
-                        return finalFunction.substring(startStr, endStr);
-                    }
+                    parameters = finalFunction.split(',');
+                    switch(parameters[0]){
+                        case 'Logic':
+                            number1 = parameters[2];
+                            number2 = parameters[4];
+                            method = parameters[5];
+                            result = logicOperators(parseFloat(number1), parseFloat(number2), method);
+                            return result.toString();
 
-                    var operation = []
+                        case 'Math':
+                            number1 = parameters[2];
+                            number2 = parameters[4];
+                            method = parameters[5];
+                            result = mathOperations(parseFloat(number1), parseFloat(number2), method);
+                            return result.toString();
 
-                    if(typeNode != "FOR"){
-                        startStr = finalFunction.indexOf(",");
-                        
-                        for (let i = 0; i < 3; i++){
-                            endStr = finalFunction.indexOf(",",++startStr);
-                            operation.push(finalFunction.substring(startStr, endStr));
-                            startStr = endStr;
-                        }
-                        if(inputNodeNames[1] == 'int'){
-                            number1Numeric = parseInt(operation[0]);
-                        }else{
-                            number1Numeric = parseFloat(operation[0]);
-                        }
-                        if(inputNodeNames[2] == 'int'){
-                            number2Numeric = parseInt(operation[1]);
-                        }else{
-                            number2Numeric = parseFloat(operation[1]);
-                        }
-                    
-                        if(typeNode == "Logic"){
-                            return logicOperators( number1Numeric, number2Numeric,  operation[2] ).toString();
-                        }
-                        if(typeNode == "Math"){
-                            return mathOperations( number1Numeric, number2Numeric,  operation[2] ).toString();
-                        }
+                        case 'FOR':
+                            console.log(parameters);
+                            init = Math.round( parseFloat( parameters[1] ) );
+                            end = Math.round( parseFloat( parameters[2] ) );
+                            number1 = parseFloat( parameters[3] );
+                            number2 = parseFloat( parameters[4] );
+                            method = parameters[5];
+                            return forNode(init, end, number1, number2, method);
+                        case 'Numeric':
+                            return parameters[1];
+                        default: break;
                     }
-                    
-                    if(typeNode == 'FOR'){
-                        startStr = finalFunction.indexOf(",");
-                        for (let i = 0; i < 7; i++){
-                            endStr = finalFunction.indexOf(",",++startStr);
-                            operation.push(finalFunction.substring(startStr, endStr));
-                            startStr = endStr;
-                        }
-                        return forNode(Math.round(parseFloat(operation[0])), Math.round(parseFloat(operation[1])), parseFloat(operation[2]), parseFloat(operation[3]), operation[4]);
-                    }
+                    break;
+
+                default: break;
             }
-            return "Node not found";
         }
-        var nodeNameRoot = nodeNames[parseInt(positionRoot)];
-        let finalResult = "";
-        finalResult = check(nodeNameRoot, this.tree, this.data, this.nodes, true);
-        return finalResult;
+
+        var finalresult = "";
+        finalresult = check(rootId, this.nodesId, this.nodesNames, this.nodesInputs, this.nodesValueVar, this.nodesMethod, true);
+        return finalresult;
     }
 
     getPythonCode(){
-        var treeCheck = [];
-        var treeCheckNames = [];
-        var numberInputs = 0;
-        var keyNode = "";
-        var nodeName = "";
-        var nameInput = "";
-        var numberNodes = this.tree.length;
-        var nodeNames = [];
+        let mathOperationsPython = this.mathOperationsPython;
+        let logicOperatorsPython = this.logicOperatorsPython;
+        let getNamePython = this.getNamePython;
+        let indentCode = this.indentCode;
+        let rootId = this.getRoot();
+ 
         var numberList = [];
         var numberListValues = [];
 
-        let positionRoot = this.getRoot();
-
-        for (let i = 0; i < numberNodes; i++){
-            keyNode = JSON.stringify(Object.keys(this.tree)[i]).replace(/"/g, '');
-            nodeName = JSON.stringify(Object.keys(this.tree[keyNode])[0]).replace(/"/g, '').replace(/'/g, '');
-            nodeNames[i] = nodeName;
-            treeCheck[i] = false;
-            treeCheckNames[i] = this.getName(nodeName, this.nodes, this.data);
-        }
-
-        let getValue = this.getValue;
-        let getName = this.getName;
-        let mathOperationsPython = this.mathOperationsPython;
-        let logicOperatorsPython = this.logicOperatorsPython;
-        let getMethod = this.getMethod;
-        let getNamePython = this.getNamePython;
-        let indentCode = this.indentCode;
-
-        function check(checkNodeName, tree, data, nodes, For){
-            if(getName(checkNodeName, nodes, data) == 'Numeric'){
-                var numberName = "N" + checkNodeName;
-                if(numberList.indexOf(numberName) == -1){
-                    numberList.push(numberName);
-                    numberListValues.push(getValue(checkNodeName, nodes, data));
-                }        
-                return numberName;
+        function check(nodeId, thisNodesId, thisNodesNames, thisNodesInputs, thisNodesMethod, thisNodesValueVar, isFor){
+            if(thisNodesNames[nodeId] == 'Numeric'){
+                var varName = 'N' + thisNodesId[nodeId];
+                if(numberList.indexOf(varName) == -1){
+                    numberList.push(varName);
+                    numberListValues.push(thisNodesValueVar[nodeId]);
+                }
+                return varName;
             }
-            
-            var inputNodeNames = [];
-            var positionNode = nodeNames.indexOf(checkNodeName);
-            keyNode = JSON.stringify(Object.keys(tree)[positionNode]).replace(/"/g, '');
-            nodeName = JSON.stringify(Object.keys(tree[keyNode])[0]).replace(/"/g, '').replace(/'/g, '');
-            numberInputs = Object.values(tree[keyNode])[0].length;
 
-            for (let j = 0; j < numberInputs; j++){
-                nameInput = Object.values(tree[keyNode])[0][j];
-                inputNodeNames.push(nameInput);
+            var nodeIdName = "";
+            var newNodeId = 0;
+            var inputsId = [];
+            for (let input in thisNodesInputs[nodeId]){
+                nodeIdName = thisNodesInputs[nodeId][input];
+                newNodeId = thisNodesId.indexOf(nodeIdName);
+                inputsId.push(newNodeId);
             }
+
             var number1 = "";
             var number2 = "";
             var method = "";
             var nameLong = "";
             var nameShort = "";
+            var out1 = "";
+            var out2 = ""
+            var inpt1 = "";
+            var inpt2 = "";
 
-            switch(treeCheckNames[positionNode]){
+            switch(thisNodesNames[nodeId]){
                 case 'Logic':
-                    number1 = check(inputNodeNames[0], tree, data, nodes, false);
-                    number2 = check(inputNodeNames[1], tree, data, nodes, false);
-                    method = getMethod(checkNodeName, nodes, data);
-                    return "\nL"+checkNodeName+" = ( "+number1+' '+logicOperatorsPython(method)+' '+number2+" )";
-                case 'Math':
-                    var Mathstr = "";
-                    number1 = check(inputNodeNames[0], tree, data, nodes, false);
-                    number2 = check(inputNodeNames[1], tree, data, nodes, false);
-                    method = getMethod(checkNodeName, nodes, data);
-                    
-                    nameLong = getName(inputNodeNames[0], nodes, data);
+                    number1 = check(inputsId[0], thisNodesId, thisNodesNames, thisNodesInputs, thisNodesMethod, thisNodesValueVar, false);
+                    number2 = check(inputsId[1], thisNodesId, thisNodesNames, thisNodesInputs, thisNodesMethod, thisNodesValueVar, false);
+                    method = thisNodesMethod[nodeId];
+
+                    nameLong = thisNodesNames[inputsId[0]];
                     nameShort = getNamePython(nameLong);
-                    var out = nameShort + inputNodeNames[0];
                     if(nameShort != 'N'){
-                        Mathstr = Mathstr + number1;
+                        inpt1 = number1;
+                        number1 = nameShort + thisNodesId[inputsId[0]];  
+                    }
+
+                    nameLong = thisNodesNames[inputsId[1]];
+                    nameShort = getNamePython(nameLong);
+                    if(nameShort != 'N'){
+                        inpt2 = number2;
+                        number2 = nameShort + thisNodesId[inputsId[1]];  
+                    }
+
+                    return inpt1 + inpt2 + "\nL" + thisNodesId[nodeId] + " = ( " + number1 + ' ' + logicOperatorsPython(method) + ' '+number2 + " )"
+                case 'Math':
+                    var MathStr = "";
+                    number1 = check(inputsId[0], thisNodesId, thisNodesNames, thisNodesInputs, thisNodesMethod, thisNodesValueVar, false);
+                    number2 = check(inputsId[1], thisNodesId, thisNodesNames, thisNodesInputs, thisNodesMethod, thisNodesValueVar, false);
+                    method = thisNodesMethod[nodeId];
+   
+                    nameLong = thisNodesNames[inputsId[0]];
+                    nameShort = getNamePython(nameLong);
+                    var out = nameShort + thisNodesId[nodeId];
+                    if(nameShort != 'N'){
+                        MathStr = MathStr + number2;
                         number1 = out;
                     }
-                    
-                    nameLong = getName(inputNodeNames[1], nodes, data);
+
+                    nameLong = thisNodesNames[inputsId[1]];
                     nameShort = getNamePython(nameLong);
-                    out = nameShort + inputNodeNames[1];
+                    out = nameShort + thisNodesId[inputsId[1]];
                     if(nameShort != 'N'){
-                        Mathstr = Mathstr + number2;
+                        MathStr = MathStr + number2;
                         number2 = out;
                     }
-                    
-                    if(For == true){
-                        return number1+","+number2+","+method+',';
+
+                    if(isFor == true){
+                        return number1 + "," + number2 + "," + method + ',';
+                    } else {
+                        return MathStr + "\nM" + thisNodesId[nodeId] + " = " + number1 + ' ' + mathOperationsPython(method) + ' ' + number2;
                     }
-                    return Mathstr+"\nM"+checkNodeName+" = "+number1+' '+mathOperationsPython(method)+' '+number2;
                 case 'FOR':
-                    var init = check(inputNodeNames[0], tree, data, nodes, true);
-                    var end = check(inputNodeNames[1], tree, data, nodes, true);
-                    var functionMath = check(inputNodeNames[2], tree, data, nodes, true);
-                    var operations = functionMath.split(",");
-                    return '\nF'+checkNodeName+" = "+operations[0]+'\nfor _ in range('+init+', '+end+')'+':'+'\n\tF'+checkNodeName+' = F'+checkNodeName+' '+mathOperationsPython(operations[2])+' '+operations[1];
-                
+                    var init = check(inputsId[0], thisNodesId, thisNodesNames, thisNodesInputs, thisNodesMethod, thisNodesValueVar, false);
+                    var end = check(inputsId[1], thisNodesId, thisNodesNames, thisNodesInputs, thisNodesMethod, thisNodesValueVar, false);
+                    var functionMath = check(inputsId[2], thisNodesId, thisNodesNames, thisNodesInputs, thisNodesMethod, thisNodesValueVar, true);
+                    var operations = functionMath.split(',');
+
+                    nameLong = thisNodesNames[inputsId[0]];
+                    nameShort = getNamePython(nameLong);
+                    if(nameShort != 'N'){
+                        inpt1 = init;
+                        init = nameShort + thisNodesId[inputsId[0]];  
+                    }
+
+                    nameLong = thisNodesNames[inputsId[1]];
+                    nameShort = getNamePython(nameLong);
+                    if(nameShort != 'N'){
+                        inpt2 = end;
+                        end = nameShort + thisNodesId[inputsId[1]];  
+                    }
+
+                    return inpt1 + inpt2 + '\nF' + thisNodesId[nodeId] + " = " + operations[0] + '\nfor _ in range(' + init + ', ' + end + ')' + ':' + '\n\tF' + thisNodesId[nodeId] + ' = F' + thisNodesId[nodeId] + ' '+mathOperationsPython(operations[2])+' '+operations[1];
                 case 'IFELSE':
-                var IEout = "\nIE"+checkNodeName+"=";
-                var condition = check(inputNodeNames[0], tree, data, nodes, false);
-                var function1 = check(inputNodeNames[1], tree, data, nodes, false);
-                var function2 = check(inputNodeNames[2], tree, data, nodes, false);
-                nameLong = getName(inputNodeNames[1], nodes, data);
-                nameShort = getNamePython(nameLong);
-                var out1 = nameShort + inputNodeNames[1];
+                    var IEout = "\nIE" + thisNodesId[nodeId] + "=";
+                    var condition = check(inputsId[0], thisNodesId, thisNodesNames, thisNodesInputs, thisNodesMethod, thisNodesValueVar, false);
+                    var function1 = check(inputsId[1], thisNodesId, thisNodesNames, thisNodesInputs, thisNodesMethod, thisNodesValueVar, false);
+                    var function2 = check(inputsId[2], thisNodesId, thisNodesNames, thisNodesInputs, thisNodesMethod, thisNodesValueVar, false);
+                    
+                    nameLong = thisNodesNames[inputsId[1]];
+                    nameShort = getNamePython(nameLong);
+                    out1 = nameShort + thisNodesId[inputsId[1]];
+                    out1 = (nameShort == 'N') ? IEout + out1 : function1 + IEout + out1;
 
-                if(nameShort == 'N'){
-                    out1 = IEout + out1;
-                }else{
-                    out1 = function1 + IEout + out1;
-                }
+                    nameLong = thisNodesNames[inputsId[2]];
+                    nameShort = getNamePython(nameLong);
+                    out2 = nameShort + thisNodesId[inputsId[2]];
+                    out2 = (nameShort == 'N') ? IEout + out2 : function2 + IEout + out2;
 
-                nameLong = getName(inputNodeNames[2], nodes, data);
-                nameShort = getNamePython(nameLong);
-                var out2 = nameShort + inputNodeNames[2];
-                
-                if(nameShort == 'N'){
-                    out2 = IEout + out2
-                }else{
-                    out2 = function2 + IEout + out2
-                }
-                
-                out1 = indentCode(out1);
-                out2 = indentCode(out2);
+                    out1 = indentCode(out1);
+                    out2 = indentCode(out2);
 
-                if(For == false){
-                    var ifElseCode = condition+"\nif(L"+inputNodeNames[0]+"):"+out1+" \nelse:"+out2;
-                    return ifElseCode;
-                }
-                break
+                    return condition + "\nif(L" + thisNodesId[inputsId[0]] + "):" + out1 + " \nelse:" + out2;
+
             }
-            return "Node not found";
+            return 'Node not found';
         }
 
-        var nodeNameRoot = nodeNames[parseInt(positionRoot)];
-        let program = "";
-        program = check(nodeNameRoot, this.tree, this.data, this.nodes, false);
-        var numberGlobalVars = numberList.length;
-        var stringGlobalVars = "";
-        for(let pos = 0; pos <  numberGlobalVars; pos++){
-            stringGlobalVars = stringGlobalVars + "\n" + numberList[pos]+" = "+numberListValues[pos];
+        var execute_root = (this.nodesNames[rootId] == 'FOR') ? true : false;
+        let program = check(rootId, this.nodesId, this.nodesNames, this.nodesInputs, this.nodesMethod, this.nodesValueVar, execute_root);
+
+        var globalVars = "";
+        for(let pos = 0; pos <  numberList.length; pos++){
+            globalVars = globalVars + "\n" + numberList[pos]+" = "+numberListValues[pos];
         }
-        var finalResult = stringGlobalVars + program;
-        finalResult = finalResult.replace("\n", "");
-        var nameLong = getName(nodeNameRoot, this.nodes, this.data);
-        var nameShort = getNamePython(nameLong);
-        this.pythonCode = finalResult + '\nprint('+nameShort+nodeNameRoot+')';
+
+        var printResult = '\nprint(' + getNamePython(this.nodesNames[rootId]) + this.nodesId[rootId] + ')';
+        program = globalVars + program + printResult;
+        this.pythonCode = program;
     }
 
     getRoot(){
-        var treeCheck = [];
-        var treeCheckNames = [];
-        var treeCheckNumbers = [];
-        var keyNode = "";
-        var nodeName = "";
-        var numberNodes = this.tree.length;
-        var nodeNames = [];
+        var checkNodes = []
+        var checkNumbers = []
 
-        for (let i = 0; i < numberNodes; i++){
-            keyNode = JSON.stringify(Object.keys(this.tree)[i]).replace(/"/g, '');
-            nodeName = JSON.stringify(Object.keys(this.tree[keyNode])[0]).replace(/"/g, '').replace(/'/g, '');
-            nodeNames[i] = nodeName;
-            treeCheck[i] = false;
-            treeCheckNames[i] = this.getName(nodeName, this.nodes, this.data);
+        var len = this.nodesId.length;
+        for(let i = 0; i < len; i++){
+            checkNodes.push(false);
+            checkNumbers.push(0);
         }
-        
-        function check(checkNodeName, tree){
-            var positionNode = nodeNames.indexOf(checkNodeName);
-            if( positionNode == -1){
+
+        function check(nodeId, thisNodesId, thisNodesNames, thisNodesInputs){
+            if(thisNodesNames[nodeId] == "Numeric"){
+                checkNodes[nodeId] = true;
+                checkNumbers[nodeId] = 1;
                 return 1;
             }
-            if(treeCheck[positionNode] == true){
-                return treeCheckNumbers[positionNode];
+
+            if(checkNodes[nodeId] == true){
+                return checkNumbers[nodeId];
             }
-            var keyNode = JSON.stringify(Object.keys(tree)[positionNode]).replace(/"/g, '');
-            var numberInputs = Object.values(tree[keyNode])[0].length;
+
+            var nodeIdName = "";
+            var newNodeId = 0;
             var numberChecks = 0;
-            var nameInput = "";
-            for (let j = 0; j < numberInputs; j++){
-                nameInput = Object.values(tree[keyNode])[0][j];
-                numberChecks += check(nameInput, tree);
+            for (let input in thisNodesInputs[nodeId]){
+                nodeIdName = thisNodesInputs[nodeId][input];
+                newNodeId = thisNodesId.indexOf(nodeIdName);
+                numberChecks += check(newNodeId, thisNodesId, thisNodesNames, thisNodesInputs);
             }
 
-            treeCheckNumbers[positionNode] = numberChecks;
-            treeCheck[positionNode] = true;
-            return treeCheckNumbers[positionNode];
+            checkNodes[nodeId] = true;
+            checkNumbers[nodeId] = numberChecks;
+            return numberChecks;
         }
 
-        for (let i = 0; i < numberNodes; i++){
-            keyNode = JSON.stringify(Object.keys(this.tree)[i]).replace(/"/g, '');
-            nodeName = JSON.stringify(Object.keys(this.tree[keyNode])[0]).replace(/"/g, '').replace(/'/g, '');
-            check(nodeName, this.tree);
+        for (let nodeId in this.nodesId){
+            check(nodeId, this.nodesId, this.nodesNames, this.nodesInputs);
         }
 
-        var max = 0;
-        var position = -1;
-        var finalPosition = 0;
-        for (let number in treeCheckNumbers){
-            position++;
-            if(treeCheckNumbers[number] > max){
-                max = treeCheckNumbers[number];
-                finalPosition = position;
+        var max = -1;
+        var root = -1;
+        for (let id in checkNumbers){
+            if(checkNumbers[id] > max){
+                root = id;
+                max = checkNumbers[id]; 
             }
         }
-        return finalPosition;
-    }
 
-    getName(nodeCode, nodes, data){
-        for (let node in nodes){
-            let thisNode = data[nodes[node]];
-            let thisnodeName = JSON.stringify(thisNode.id);
-            if (thisnodeName == nodeCode){
-                return JSON.stringify(thisNode.name).replace(/"/g, '');
-            }
-        }
-        return '';
-    }
-
-    getValue(nodeCode, nodes, data){
-        for (let node in nodes){
-            let thisNode = data[nodes[node]];
-            let thisnodeName = JSON.stringify(thisNode.id);
-            if (thisnodeName == nodeCode){
-                if(JSON.stringify(thisNode.name).replace(/"/g, '') == 'Numeric'){
-                    return JSON.stringify(thisNode.data.valuevar).replace(/"/g, '');
-                }
-            }
-        }
-        return '';
-    }
-
-    getMethod(nodeCode, nodes, data){
-        for (let node in nodes){
-            let thisNode = data[nodes[node]];
-            let thisnodeName = JSON.stringify(thisNode.id);
-            if (thisnodeName == nodeCode){
-                var name = JSON.stringify(thisNode.name).replace(/"/g, '');
-                if(name == 'Math' || name == 'Logic'){
-                    return JSON.stringify(thisNode.data.data.method).replace(/"/g, '');
-                }
-            }
-        }
-        return '';
+        return root;
     }
 
     logicOperators(number1, number2, method){
@@ -778,18 +691,18 @@ export default class drawflowExtend{
             case 'Numeric':
                 return 'N';
             case 'Logic':
-                return 'L';
+                return 'L'
             case 'FOR':
-                return 'F';
+                return 'F'
             case 'IFELSE':
-                return 'IE';
+                return 'IE'
             case 'Math':
-                return 'M';
+                return 'M'
         }
     }
 
     indentCode(pythonCode){ 
-        var pyhtonCode_new = pythonCode.replaceAll("\n", "\n\t");
-        return pyhtonCode_new;
+        var pyhtonCode_new = pythonCode.replaceAll("\n", "\n\t") 
+        return pyhtonCode_new
     }
 }

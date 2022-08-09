@@ -144,10 +144,12 @@ export default {
     const requestsData = ref('');
 
     function executeNodeCode(){
+      drawflowExtend.value.reset();
       consoleData.value = drawflowExtend.value.executeNodeCode(editor.value.export())
     }
 
     function pythonCode(){
+      drawflowExtend.value.reset();
       dialogPythonCode.value = drawflowExtend.value.makePythonCode(editor.value.export());
       dialogVisiblePythonCode.value = true;
     }
@@ -156,25 +158,31 @@ export default {
       editor.value.import({"drawflow": {"Home": {"data": {}}}});
     }
 
-    function importEditor() {   
+    function importEditor() {  
+      requestsData.value = ""; 
       dialogVisibleImport.value = true;
       axios.get('http://localhost:3000/readEditor')
       .then(response => {
         dialogDataImport.value = response.data;
       })
-      .catch(error => requestsData.value = error)
+      .catch(error => requestsData.value = error + requestsData.value)
     }
 
     function importDataConfirm(){
       if(dialogDataImport.value == 'Empty'){
         requestsData.value = "Empty"
-        return 
+        return;
+      }
+      if(requestsData.value == "AxiosError: Network Error" || requestsData.value == ""){
+        requestsData.value += " (no editor received)";
+        return;
       }
       editor.value.import(JSON.parse(dialogDataImport.value.replace("\\\"", "'")))
       requestsData.value = "Imported"
     }
 
     function exportEditor() {
+      requestsData.value = "";
       dialogDataExport.value = editor.value.export();
       dialogVisibleExport.value = true;
     }
